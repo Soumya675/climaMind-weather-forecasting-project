@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login & Signup</title>
+    <style>
+        *{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body{
+            background-color: rgb(250, 250, 250);
+            background-image:url("https://media.istockphoto.com/id/2169040419/photo/ux-ui-designers-discussing-and-brainstorming-on-wireframes-for-a-website-and-mobile-app.jpg?s=1024x1024&w=is&k=20&c=9YcElt_Wy_i6SLN81hdPPqeO_xcnGX7AkNWs20H4XXM=");
+            font-family: Arial, sans-serif;
+        }
+        nav{
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #f9830c;
+            padding: 18px 36px;
+            border: 5px solid rgb(31, 28, 28);
+            font-weight: bold;
+        }
+        .nav{
+            list-style: none;
+            display: flex;
+            gap: 20px;
+        }
+        .nav li a{
+            text-decoration: none;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .auth-links{
+            display: flex;
+            gap: 10px;
+        }
+        .auth-links a{
+            text-decoration: none;
+            padding: 8px 12px;
+            background-color: white;
+            color: #f9830c;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .auth-container{
+            position: fixed;
+            top: 50px;
+            right: 20px;
+            width: 350px;
+            padding: 20px;
+            background: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            display: none;
+        }
+        .auth-container h2{
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .auth-container input{
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .auth-container button{
+            width: 100%;
+            padding: 10px;
+            background: #f9830c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .auth-container button:active{
+            background: #d8720a;
+        }
+        .toggle{
+            text-align: center;
+            margin-top: 10px;
+        }
+        .toggle a{
+            color: #f9830c;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+</head>
+<body>
+    <nav>
+        <div class="logo">Sonya</div>
+        <ul class="nav">
+            <li><a href="#">Home</a></li>
+            <li><a href="#">Service</a></li>
+            <li><a href="#">Products</a></li>
+            <li><a href="#">Contact Us</a></li>
+        </ul>
+        <div class="auth-links">
+            <a href="#" onclick="toggleForm('login')">Login</a>
+            <a href="#" onclick="toggleForm('signup')">Sign Up</a>
+        </div>
+    </nav>
+
+    <div class="auth-container" id="login-container">
+        <h2>Login</h2>
+        <input type="text" placeholder="Username or Phone Number" required>
+        <input type="password" placeholder="Password" required>
+        <div class="g-recaptcha" data-sitekey="your-site-key"></div>
+        <button>Login</button>
+        <button style="background-color: #db4437;">Login with Google</button>
+        <div class="toggle"><a href="#" onclick="toggleForm('forgot-password')">Forgot Password?</a></div>
+        <div class="toggle">Don't have an account? <a href="#" onclick="toggleForm('signup')">Sign up</a></div>
+    </div>
+
+    <div class="auth-container" id="signup-container" style="display: none;">
+        <h2>Sign Up</h2>
+        <input type="text" placeholder="Username" required>
+        <input type="email" placeholder="Email" required>
+        <input type="text" placeholder="Phone Number" required>
+        <input type="password" placeholder="Password" required>
+        <input type="password" placeholder="Confirm Password" required>
+        <div class="g-recaptcha" data-sitekey="your-site-key"></div>
+        <button>Sign Up</button>
+        <button style="background-color: #db4437;">Sign Up with Google</button>
+        <div class="toggle">Already have an account? <a href="#" onclick="toggleForm('login')">Login</a></div>
+    </div>
+
+    <div class="auth-container" id="forgot-password-container" style="display: none;">
+        <h2>Forgot Password</h2>
+        <input type="email" placeholder="Enter your email" required>
+        <button>Reset Password</button>
+        <div class="toggle"><a href="#" onclick="toggleForm('login')">Back to Login</a></div>
+    </div>
+
+    <script>
+        function toggleForm(type) {
+            document.getElementById('login-container').style.display = 'none';
+            document.getElementById('signup-container').style.display = 'none';
+            document.getElementById('forgot-password-container').style.display = 'none';
+            document.getElementById(`${type}-container`).style.display = 'block';
+        }
+    </script>
+</body>
+</html>

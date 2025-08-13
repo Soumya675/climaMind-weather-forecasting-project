@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ClimaMind AI</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      color: #222;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    #bgGlobe {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: -1;
+      width: 100%;
+      height: 100%;
+      opacity: 0.15;
+      pointer-events: none;
+    }
+
+    .content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      background: linear-gradient(to bottom right, #e0eafc, #cfdef3);
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin: 10px 0;
+      color: #1976d2;
+    }
+
+    #searchForm {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    #cityInput, #chatInput {
+      width: 300px;
+      padding: 18px;
+      font-size: 20px;
+      border: 1px solid #aaa;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      outline: none;
+    }
+
+    #searchBtn, #sendBtn {
+      padding: 18px 25px;
+      font-size: 18px;
+      background-color: #1976d2;
+      color: white;
+      font-weight: bold;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    #weatherResult {
+      font-size: 20px;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.85);
+      padding: 25px;
+      border-radius: 12px;
+      max-width: 600px;
+      width: 100%;
+      color: #333;
+    }
+
+    #map {
+      width: 100%;
+      max-width: 600px;
+      height: 300px;
+      margin-top: 20px;
+      border-radius: 12px;
+    }
+
+    #chatbot, #chatInterface {
+      margin-top: 30px;
+      max-width: 600px;
+      width: 100%;
+      background-color: rgba(255, 255, 255, 0.9);
+      border-radius: 12px;
+      padding: 20px;
+      color: #333;
+      font-size: 16px;
+    }
+
+    #chatBox {
+      height: 200px;
+      overflow-y: auto;
+      background-color: #f9f9f9;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    @media (max-width: 600px) {
+      h1 { font-size: 2rem; }
+      #searchForm { flex-direction: column; align-items: center; }
+      #cityInput, #searchBtn, #chatInput { width: 100%; font-size: 18px; }
+      #weatherResult, #chatbot, #chatInterface { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="bgGlobe"></div>
+
+  <div class="content">
+    <h1>🌤️ ClimaMind AI</h1>
+    <form id="searchForm">
+      <input type="text" id="cityInput" placeholder="Enter your city" required />
+      <button type="submit" id="searchBtn">Search</button>
+    </form>
+
+    <div id="weatherResult">🌎 Weather info will appear here...</div>
+    <div id="map"></div>
+
+    <div id="chatbot">
+      🤖 <strong>AI Suggestion:</strong>
+      <div id="aiMessage">Tell me how you're feeling today, and I’ll suggest weather-safe activities!</div>
+    </div>
+
+    <div id="chatInterface">
+      <h3>💬 Chat with ClimaBot</h3>
+      <div id="chatBox"></div>
+      <input type="text" id="chatInput" placeholder="Type your message..." />
+      <button id="sendBtn" onclick="sendChat()">Send</button>
+    </div>
+  </div>
+
+  <script>
+    const API_Key = "9e8c799566b603b2d76b82085e78e40b";
+    const weatherResult = document.getElementById("weatherResult");
+    const cityInput = document.getElementById("cityInput");
+    const form = document.getElementById("searchForm");
+    const aiMessage = document.getElementById("aiMessage");
+
+    let map, marker;
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const city = cityInput.value.trim();
+      if (city) {
+        getWeather(city);
+        cityInput.blur();
+      }
+    });
+
+    function getWeather(location) {
+      const url = `https://api.openweathermap.org/data/2.5/weather?q=${location}&appid=${API_Key}&units=metric`;
+      fetch(url)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.cod === 200) {
+            const { name, main, weather, coord } = data;
+            const description = weather[0].description;
+            const temp = main.temp;
+
+            weatherResult.innerHTML = `
+              📍 <strong>${name}</strong><br>
+              🌡️ Temperature: <strong>${temp}°C</strong><br>
+              🌥️ Condition: <strong>${description}</strong>
+            `;
+
+            updateMap(coord.lat, coord.lon);
+            updateAISuggestion(temp, description);
+          } else {
+            weatherResult.textContent = "❌ Location not found.";
+            aiMessage.textContent = "";
+          }
+        })
+        .catch(() => {
+          weatherResult.textContent = "⚠️ Error fetching data.";
+        });
+    }
+
+    function updateMap(lat, lon) {
+      if (!map) {
+        map = L.map("map").setView([lat, lon], 10);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: 'Map data © OpenStreetMap contributors'
+        }).addTo(map);
+      } else {
+        map.setView([lat, lon], 10);
+      }
+
+      if (marker) {
+        marker.setLatLng([lat, lon]);
+      } else {
+        marker = L.marker([lat, lon]).addTo(map);
+      }
+    }
+
+    function updateAISuggestion(temp, description) {
+      let mood = "";
+      if (temp > 30) mood = "It's hot! Stay hydrated and avoid going out in the afternoon.";
+      else if (temp < 15) mood = "Chilly day! Wear warm clothes if you're heading out.";
+      else mood = "Nice weather! Perfect for a walk or some outdoor fun.";
+
+      if (description.includes("rain")) mood += " ☔ Don’t forget an umbrella!";
+      else if (description.includes("clear")) mood += " ☀️ Enjoy the sunshine!";
+
+      aiMessage.textContent = mood;
+    }
+
+    window.onload = function () {
+      weatherResult.textContent = "📍 Detecting your location...";
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const lat = pos.coords.latitude;
+            const lon = pos.coords.longitude;
+            updateMap(lat, lon);
+            fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_Key}&units=metric`)
+              .then((res) => res.json())
+              .then((data) => {
+                if (data.name) {
+                  cityInput.value = data.name;
+                  getWeather(data.name);
+                } else {
+                  weatherResult.textContent = "⚠️ Unable to fetch weather from location.";
+                }
+              });
+          },
+          () => {
+            weatherResult.textContent = "⚠️ Location access denied. Please enter your city above.";
+          }
+        );
+      } else {
+        weatherResult.textContent = "⚠️ Geolocation not supported in this browser.";
+      }
+    };
+
+    // 3D Rotating Globe Background
+    const container = document.getElementById("bgGlobe");
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ alpha: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    container.appendChild(renderer.domElement);
+
+    const geometry = new THREE.SphereGeometry(2, 64, 64);
+    const texture = new THREE.TextureLoader().load("https://threejsfundamentals.org/threejs/resources/images/earth-day.jpg");
+    const material = new THREE.MeshBasicMaterial({ map: texture });
+    const earth = new THREE.Mesh(geometry, material);
+    scene.add(earth);
+    camera.position.z = 5;
+
+    function animate() {
+      requestAnimationFrame(animate);
+      earth.rotation.y += 0.0015;
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // Chatbot Extended Logic
+    // Chatbot Extended Logic
+function sendChat() {
+  const input = document.getElementById("chatInput");
+  const message = input.value.trim();
+  const chatBox = document.getElementById("chatBox");
+
+  if (message) {
+    const userMsg = document.createElement("div");
+    userMsg.textContent = "🧑: " + message;
+    chatBox.appendChild(userMsg);
+
+    const botMsg = document.createElement("div");
+    setTimeout(() => {
+      botMsg.textContent = "🤖: " + getBotReply(message);
+      chatBox.appendChild(botMsg);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }, 500);
+
+    input.value = "";
+  }
+}
+
+function getBotReply(msg) {
+  msg = msg.toLowerCase();
+  if (msg.includes("rain")) return "Rainy days are great for reading a book or visiting a museum! ☔";
+  if (msg.includes("hot")) return "Hot weather calls for iced drinks and shade. Maybe visit an air-conditioned mall!";
+  if (msg.includes("cold")) return "Perfect time for hot chocolate or indoor board games. Stay cozy!";
+  if (msg.includes("windy")) return "Hold onto your hat! Maybe fly a kite if it’s not too harsh.";
+  if (msg.includes("sunny")) return "Don’t forget sunscreen if you're heading out! ☀️";
+  return "Try asking about the weather, temperature, or what to do on a rainy or sunny day!";
+}
+
+// 👉 Add this NEW listener for Enter key:
+document.getElementById("chatInput").addEventListener("keydown", function(e) {
+  if (e.key === "Enter") {
+    e.preventDefault(); // prevent newline
+    sendChat();
+  }
+});
+
+  </script>
+  
+ 
+
+</body>
+</html>
